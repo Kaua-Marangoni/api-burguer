@@ -8,69 +8,65 @@ const app = express()
 app.use(express.json())
 app.use(cors())
 
-app.get("/", (request, response) => {
-    response.send("Teste")
+const orders = []
+
+const checkUserId = (request, response, next) => {
+    const { id } = request.params
+    const index = orders.findIndex(order => order.id === id)
+    if (index < 0) return response.status(404).json({ error: "Order not found" })
+
+    request.userIndex = index
+    request.userId = id
+
+    next()
+}
+
+app.get("/order", (request, response) => {
+    return response.json(orders)
 })
 
-// const orders = []
+app.get("/order/:id", checkUserId, (request, response) => {
+    const index = request.userIndex
 
-// const checkUserId = (request, response, next) => {
-//     const { id } = request.params
-//     const index = orders.findIndex(order => order.id === id)
-//     if (index < 0) return response.status(404).json({ error: "Order not found" })
+    return response.json(orders[index])
+})
 
-//     request.userIndex = index
-//     request.userId = id
+app.post("/order", (request, response) => {
+    const { order, clientName, price } = request.body
+    const newOrder = { id: uuid.v4(), order, clientName, price, status: "Em preparação" }
 
-//     next()
-// }
+    orders.push(newOrder)
 
-// app.get("/order", (request, response) => {
-//     return response.json(orders)
-// })
+    return response.status(201).json(newOrder)
+})
 
-// app.get("/order/:id", checkUserId, (request, response) => {
-//     const index = request.userIndex
+app.put("/order/:id", checkUserId, (request, response) => {
+    const { order, clientName, price } = request.body
+    const index = request.userIndex
+    const id = request.userId
 
-//     return response.json(orders[index])
-// })
+    const updateOrder = { id, order, clientName, price, status: "Em preparação" }
 
-// app.post("/order", (request, response) => {
-//     const { order, clientName, price } = request.body
-//     const newOrder = { id: uuid.v4(), order, clientName, price, status: "Em preparação" }
+    orders[index] = updateOrder
 
-//     orders.push(newOrder)
+    return response.json(updateOrder)
+})
 
-//     return response.status(201).json(newOrder)
-// })
+app.delete("/order/:id", checkUserId, (request, response) => {
+    const index = request.userIndex
 
-// app.put("/order/:id", checkUserId, (request, response) => {
-//     const { order, clientName, price } = request.body
-//     const index = request.userIndex
-//     const id = request.userId
+    orders.splice(index, 1)
 
-//     const updateOrder = { id, order, clientName, price, status: "Em preparação" }
+    return response.json({ message: "Deleted Order" })
+})
 
-//     orders[index] = updateOrder
+app.patch("/order/:id", checkUserId, (request, response) => {
+    const index = request.userIndex
 
-//     return response.json(updateOrder)
-// })
+    orders[index].status = "Pronto"
 
-// app.delete("/order/:id", checkUserId, (request, response) => {
-//     const index = request.userIndex
-
-//     orders.splice(index, 1)
-
-//     return response.json({ message: "Deleted Order" })
-// })
-
-// app.patch("/order/:id", checkUserId, (request, response) => {
-//     const index = request.userIndex
-
-//     orders[index].status = "Pronto"
-
-//     return response.json(orders[index])
-// })
+    return response.json(orders[index])
+})
 
 
 app.listen(process.env.PORT || port, () => {
